@@ -16,7 +16,7 @@
 		fprintf(stderr,"Error %d detected in line %d of file %s\n", \
 			err,__LINE__,__FILE__); \
 		fprintf(stderr, "%s\n", #errmsg); \
-		return -1; \
+		exit(-1); \
 	}
 
 #endif  /* MAIN_DRIVER_ */

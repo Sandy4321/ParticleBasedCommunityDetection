@@ -1,5 +1,5 @@
 /*
- * graph.h
+ * particle.h
  * Author: apetkova
  *-
  */
@@ -21,12 +21,12 @@ and necessary so for the transition matrix
 
 #include "graph.h"
 
-// edgelist node struct
+// particle struct
 typedef struct particle
 {
     int id;
     double energy;
-    int  state;
+    int state;
     int curr_node_id;
     int prev_node_id;
 } particle_type;
@@ -36,7 +36,7 @@ particle_type *particles;
 // Allocate memory for particles
 void initParticles();
 
-// Disperse the particles at random to the graph.
+// Disperse the particles at random on the graph.
 void initPlaceParticles(); 
 
 #endif

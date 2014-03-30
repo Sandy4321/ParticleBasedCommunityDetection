@@ -1,5 +1,5 @@
 /*
- * run_detection.c
+ * particle.c
  * Author: apetkova
  *
  */
@@ -15,7 +15,7 @@
 void initParticles()
 {
     int i;
-	//TODO: check wether constant arithmetic is compiler-dependent. Is this going to break?
+	//TODO: check whether constant arithmetic is compiler-dependent. Is this going to break?
 	double init_omega = (double)OMEGA_MIN + (double)(OMEGA_MAX - OMEGA_MIN)/NUM_PARTICLES;
     
 	particles = (particle_type*)malloc(NUM_PARTICLES * sizeof(particle_type));
@@ -31,15 +31,19 @@ void initParticles()
 
 }
 
-// TODO: implement the random disperse later. For now, just harcode the starting location of the particles
+/* 
+ *TODO: implement the random disperse later. For now, just hardcode the initial plcement
+ * of the particles
+ */
 void initPlaceParticles()
 {
     int i; 
-
     for(i=0; i<NUM_PARTICLES; i++)
     {
-        particles[i].curr_node_id = i; 
-        graph->neighbors[i].idx_node.dominator = i; 
+        particles[i].curr_node_id = 5; 
+        graph->nodes[5].idx_node.dominator = i; 
+		particles[i].curr_node_id = 25;
+	    graph->nodes[25].idx_node.dominator = i;
     }       
 }
 

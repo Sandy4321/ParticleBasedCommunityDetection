@@ -33,7 +33,8 @@ int main(int argc, char **argv)
 	//Initialize the attributes of each particle
     initParticles();
 
-    // TODO: implement the random disperse later. For now, just harcode the start of the particles
+    // TODO: implement the random disperse later. For now, just hardcode \
+	 the initial position of the particles
     initPlaceParticles();  
     //printParticles(); 
 

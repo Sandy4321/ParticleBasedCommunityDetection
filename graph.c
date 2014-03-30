@@ -46,7 +46,6 @@ int readGraph(char *filename)
 			buffer[i] = c;
 			i++;
 		}
-		printf("c = %s", buffer);
 	}
 	//convert the number of nodes string to int
 	num_nodes = strtod(buffer, &end);
@@ -96,17 +95,17 @@ int createGraph(int n)
     graph->nvert = n;
  
     // Create an array of adjacency lists
-    graph->neighbors = (adjlist_type*)malloc(n * sizeof(adjlist_type));
-    j = ((graph->neighbors) == NULL);
+    graph->nodes = (adjlist_type*)malloc(n * sizeof(adjlist_type));
+    j = ((graph->nodes) == NULL);
 	CHECK(j, "Unable to allocate memory for adjacency list array");
  
-	//Init each neighbors list (array)
+	//Init each nodes list (array)
     for(i = 0; i < n; i++)
     {
-	  	graph->neighbors[i].idx_node.id = i;
-	  	graph->neighbors[i].idx_node.dominator = -1;
-        graph->neighbors[i].head = NULL;
-        graph->neighbors[i].num_neighbors = 0;
+	  	graph->nodes[i].idx_node.id = i;
+	  	graph->nodes[i].idx_node.dominator = -1;
+        graph->nodes[i].head = NULL;
+        graph->nodes[i].num_neighbors = 0;
     }
 
     return 0; 
@@ -121,12 +120,12 @@ void destroyGraph()
 
     if(graph)
     {
-        if(graph->neighbors)
+        if(graph->nodes)
         {
             //Free up the nodes
             for (i = 0; i < graph->nvert; i++)
             {
-                adjlist_node_type* listPtr = graph->neighbors[i].head;
+                adjlist_node_type* listPtr = graph->nodes[i].head;
                 while (listPtr)
                 {
                     adjlist_node_type* tmp = listPtr;
@@ -135,7 +134,7 @@ void destroyGraph()
                 }
             }
             //Free the adjacency list array
-            free(graph->neighbors);
+            free(graph->nodes);
         }
         //Free graph
         free(graph);
@@ -150,33 +149,55 @@ void addEdge(int src, int dest)
 {
     // Add an edge from src to dst in the adjacency list
     adjlist_node_type* newNode = createNode(dest);
-    newNode->next = graph->neighbors[src].head;
-    graph->neighbors[src].head = newNode;
-    graph->neighbors[src].num_neighbors++;
+    newNode->next = graph->nodes[src].head;
+    graph->nodes[src].head = newNode;
+    graph->nodes[src].num_neighbors++;
  
     // Since graph is undirected, add an edge from dest to src as well
     newNode = createNode(src);
-    newNode->next = graph->neighbors[dest].head;
-    graph->neighbors[dest].head = newNode;
-    graph->neighbors[dest].num_neighbors++; 
+    newNode->next = graph->nodes[dest].head;
+    graph->nodes[dest].head = newNode;
+    graph->nodes[dest].num_neighbors++; 
 }
+
+/*
+ *****************************************
+ * Checks if node j is a neighbor of node i
+ */
+int isNeighbor(int i, int j)
+{
+	int k;
+	adjlist_node_type *listPtr = graph->nodes[i].head;
+
+	for(k=0; k< graph->nodes[i].num_neighbors; k++){
+		if(listPtr->id == graph->nodes[i].idx_node.id)
+			return 1;
+		listPtr = listPtr->next;
+	}
+	return 0;
+}
+
  
 /*
+ *****************************************
  *Prints out the graph as an adjacency list
  */
 void printGraph()
 {
     int i;
+	
+	printf("\nGraph's Adjacency List:\n");
+	printf("-----------------------\n");
     for (i = 0; i < graph->nvert; i++)
     {
-        adjlist_node_type* listPtr = graph->neighbors[i].head;
-        printf("\n%d: ", graph->neighbors[i].idx_node.id);
+        adjlist_node_type* listPtr = graph->nodes[i].head;
+        printf("%d: ", graph->nodes[i].idx_node.id);
         while (listPtr)
         {
             printf("->%d", listPtr->id);
             listPtr = listPtr->next;
         }
-        printf("\tdominator: %d ", graph->neighbors[i].idx_node.dominator);
+        printf("\tdominator: %d \n", graph->nodes[i].idx_node.dominator);
     }
 }
 

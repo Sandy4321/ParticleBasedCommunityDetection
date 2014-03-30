@@ -33,7 +33,7 @@ typedef struct graph
 {
     int nvert;      // |V|
     int nedges;          // |E|
-    adjlist_type *neighbors;
+    adjlist_type *nodes;
 } graph_type;
 
 graph_type *graph; 
@@ -49,6 +49,9 @@ void destroyGraph();
  
 //Inserts an edge in the graph
 void addEdge(int src, int dest);
+
+//Checks if node j is a neighbor of node i
+int isNeighbor(int i, int j);
  
 //Prints the graph as an adjacency list
 void printGraph();
