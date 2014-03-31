@@ -1,0 +1,12 @@
+The executable takes one mandatory argument, i.e., the input file containing the data.
+Since the makefile is provided, run as follows:
+>make
+>./main_driver input_file_name
+>rm main_driver
+
+E.g.:
+>make
+>./main_driver out.ucidata-zachary
+>rm main_driver
+
+More details to be included...
