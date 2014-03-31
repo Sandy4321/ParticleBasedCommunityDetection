@@ -20,11 +20,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "usage: %s filename\n", argv[0]);
 		exit(1);
 	} 
-	/*else {
-		//open data file for reading
-		fin = fopen(argv[1], "w");
-		CHECK(!fin, "Could not open input file");
-	}*/
 	
 	//Create the graph from inout file
 	readGraph(argv[1]);
@@ -42,7 +37,8 @@ int main(int argc, char **argv)
 	runDetection();	
 
 	printGraph();	
-    printParticles(); 
+    //printParticles(); 
+    printClusters();
 	
 	destroyGraph();
 	return 0;

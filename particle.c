@@ -37,14 +37,18 @@ void initParticles()
  */
 void initPlaceParticles()
 {
-    int i; 
-    for(i=0; i<NUM_PARTICLES; i++)
-    {
-        particles[i].curr_node_id = 5; 
-        graph->nodes[5].idx_node.dominator = i; 
-		particles[i].curr_node_id = 25;
-	    graph->nodes[25].idx_node.dominator = i;
-    }       
+    particles[0].curr_node_id = 5; 
+    graph->nodes[5].idx_node.dominator = 0; 
+	particles[1].curr_node_id = 25;
+	graph->nodes[25].idx_node.dominator = 1;
+
+    //int i;
+    //for(i=0; i<NUM_PARTICLES; i++)
+    //{
+    //    particles[i].curr_node_id = i;
+    //    graph->neighbors[i].idx_node.dominator = i;
+    //}
+
 }
 
 void printParticles()

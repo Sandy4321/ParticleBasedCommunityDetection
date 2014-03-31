@@ -7,7 +7,7 @@
 #ifndef RUN_DETECTION_H_
 #define RUN_DETECTION_H_
 
-#define NUM_ITERATIONS 1000
+#define NUM_ITERATIONS 1000000
 #define EPSILON	0.05
 #include "particle.h"
 
@@ -50,5 +50,8 @@ void print2DArr(double **arr, int rows, int cols);
 //Finds max value in an array of floats and returns its INDEX. It assumes that there is at least 1 \
 non-negative element in the array.
 int max_array(double *arr, int arrLen);
+
+// Print the final clusters 
+void printClusters();
 
 #endif  /*  _RUN_DETECTION_H_ */

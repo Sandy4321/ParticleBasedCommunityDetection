@@ -11,7 +11,7 @@
 #define OMEGA_MAX 1
 #define OMEGA_MIN 0
 #define DELTA 0.1
-#define ALPHA 0.6
+#define ALPHA 0.4
 //pertaining to particle state \
 counterintuitive values but match the paper \
 and necessary so for the transition matrix

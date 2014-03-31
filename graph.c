@@ -14,8 +14,6 @@
 
 #define NEWLINE 10
 
-//adjlist_node_type *adjlist_node_ptr; 
-//adjlist_type *adjlist_ptr; 
 
 /*
  *Reads data from input file and builds a graph

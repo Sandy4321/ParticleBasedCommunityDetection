@@ -54,6 +54,7 @@ void runDetection()
 	//Compute matrixNBar
 	compMatrixNBar();
 
+	printf("\nRUNNING DETECTION ALG.....\n");
 	// Main descrete-time driving loop. 
 	// In each iteration, each particle performs a walk
     do
@@ -64,19 +65,13 @@ void runDetection()
 				//find the num of neighbors of the node particle j \
 				currently occupies
 				num_neighbors = graph->nodes[particles[j].curr_node_id].num_neighbors;
-	//			printf("num_neighbors = %d\n", num_neighbors);
 				listPtr = graph->nodes[particles[j].curr_node_id].head;
 				assert(NULL != listPtr);
-			/*	printf("particle %d\tcurr node = %d\tneighbors:", particles[j].id, particles[j].curr_node_id);
-				while(listPtr->next!=NULL){
-					printf("->%d", listPtr->id);
-					listPtr = listPtr->next;
-				}*/
-				printf("\n");
+				
 				//compute the rand probability to visit a \
 				neighbor of nodes[particles[j].curr_node_id]
                 rand_prob = 1/(double)num_neighbors;
-				//printf("rand_prob = %g\n", rand_prob);			
+				
 				//compute the pref walk vector
 				pref_prob = particlePrefWalk(&particles[j]);
 				
@@ -98,17 +93,15 @@ void runDetection()
 				
 				// Update matrixN
                 matrixN[particles[j].curr_node_id][particles[j].id]++;
-	//			printf("matrixN\n-----------------\n");
-    //          print2DArr(matrixN, graph->nvert, NUM_PARTICLES);		
+				
 				//calculate the new dominator of the node particle j just moved to
 				compNodeDominator(&particles[j]);
 				
 				//copy matrixNBar into matrixNBarCopy
 				memcpy(matrixNBarCopy, matrixNBar, graph->nvert* NUM_PARTICLES*sizeof(double));
-			//	printf("matrixNBar\n-----------------\n");
-			//	print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
-			//	printf("matrixNBarCopy\n-----------------\n");
-			//	print2DArr(matrixNBarCopy, graph->nvert, NUM_PARTICLES);
+				
+				free(tran_vector);
+				free(pref_prob);
 			}
             else{
 				// if particle's energy is drained - reanimate
@@ -120,13 +113,16 @@ void runDetection()
         //print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
         //Compute the diff b/n NBar(t)-NBar(t-1) in order to \
         compare to EPSILON
-        fixed_pt = compFixPoint();
-        printf("fixed_pt = %g\n", fixed_pt);
+        //fixed_pt = compFixPoint();
+        //printf("fixed_pt = %g\n", fixed_pt);
 
         //printf("\n\n Iteration %d\n", i);
         //printParticles();
 		i++;
     }while(i<NUM_ITERATIONS);
+
+	printf("\n Final matrixN:\n-------------\n");
+	print2DArr(matrixN, graph->nvert, NUM_PARTICLES);
 
 	//calcPrand();
 	free(matrixN);
@@ -330,7 +326,7 @@ void compNodeDominator(particle_type *p)
  * Computes N bar ( the relative frequency of visits of particle k
  * to node i) for particle k on node i
  */
-double compNBar (int k, int i)
+double compNBar(int k, int i)
 {
 	int j;
 	int total_visits = 0;
@@ -385,7 +381,6 @@ double compFixPoint()
 	diff_vect = (double*)malloc(graph->nvert*sizeof(double));
 	out = (diff_vect == NULL);
     CHECK(out, "Unable to allocate memroy for diff_vect");	
-
 	//Init the diff vector with all 0s
 	bzero(diff_vect, (graph->nvert)*sizeof(double));
 
@@ -393,10 +388,10 @@ double compFixPoint()
 	for(i=0; i < graph->nvert; i++)
 		for(j=0; j < NUM_PARTICLES; j++)
 			diff_mat[i][j] = matrixNBar[i][j] - matrixNBarCopy[i][j];
-	printf("matrixNBarCopy\n");
-	print2DArr(matrixNBarCopy, graph->nvert, NUM_PARTICLES);
-	printf("matrixNBar\n");
-	print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
+//	printf("matrixNBarCopy\n");
+//	print2DArr(matrixNBarCopy, graph->nvert, NUM_PARTICLES);
+//	printf("matrixNBar\n");
+//	print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
 	//print2DArr(diff_mat, graph->nvert, NUM_PARTICLES);
 	//Sum up the entries in each raw of the diff matrix
     for(i=0; i < graph->nvert; i++)
@@ -436,14 +431,12 @@ void initMatrixN(int rows, int cols)
 	printf("*************************\n");
 }
 
-//TODO Create function printMatrixN
-
 
 /*
  *************************************
 Creates a multidimensional data structure according to passed size parameters
 */
-double ** create2DArray( int row, int col ) {
+double **create2DArray( int row, int col ) {
     double ** array_ptr;
     int i;
 
@@ -499,3 +492,28 @@ int max_array(double *arr, int arrLen)
    }
    return(idx);
 }
+
+/*
+ ***************************************
+ * Print each cluster. We have as many clusters as we have particles in this algorithm
+ */
+void printClusters()
+{
+
+    int i, j; 
+	
+	printf("\n");
+    for(i=0; i< NUM_PARTICLES; i++)
+    {
+        printf("Cluster %d: ", i); 
+        for(j=0; j< graph->nvert; j++)
+        {
+                if(graph->nodes[j].idx_node.dominator == i)
+                    printf("%d, ", j+1); 
+        }
+        printf("\n"); 
+    }
+
+
+}
+
