@@ -60,6 +60,34 @@ int readGraph(char *filename)
 	//printGraph(graph);			
 }	
 
+/*
+ *Reads labels
+ */
+int readLabels(char *filename)
+{
+	int i;
+	char buffer[24];
+	FILE *fin;
+
+	//open data file for reading
+	fin = fopen(filename, "r");
+		if( fin == NULL ) {
+			printf(" Error, could not open %s, abort\n", filename);
+        	return 0;
+    	}
+
+    i = 0; 
+	while (!feof(fin)) {
+		fscanf(fin, "%s", buffer);
+        strcpy(graph->nodes[i].idx_node.label, buffer);
+        i++; 
+		printf("%s\n", buffer);
+	}
+
+	fclose(fin);
+
+}	
+
 /* 
  *Creates an edge list node
  */

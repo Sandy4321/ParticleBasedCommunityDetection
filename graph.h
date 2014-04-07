@@ -15,6 +15,7 @@ typedef struct adjlist_node
     double rel_weight;
 
     int dominator;     // which particle dominates this node
+    char label[24]; 
 
     struct adjlist_node *next;
 } adjlist_node_type;
@@ -40,6 +41,8 @@ graph_type *graph;
 
 //Reads data from input file and builds a graph based on it
 int readGraph(char *filename);
+
+int readLabels(char *filename);
 
 //Creates an undirected graph with n vertices
 int createGraph(int n);

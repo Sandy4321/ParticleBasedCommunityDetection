@@ -19,6 +19,8 @@
 		exit(-1); \
 	}
 
+#define ABS(a) ((a)<0?-(a):a)
+
 #endif  /* MAIN_DRIVER_ */
 
 

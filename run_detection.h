@@ -7,35 +7,34 @@
 #ifndef RUN_DETECTION_H_
 #define RUN_DETECTION_H_
 
-#define NUM_ITERATIONS 1000000
-#define EPSILON	0.05
+#define EPSILON	0.00001
 #include "particle.h"
 
 //Drives the community detection algorithm
-void runDetection();
+void runDetection(int num_iterations, int num_particles, double alpha);
 
 //void particleRandomWalk(particle_type *p);
 void particleRean(particle_type *p);
 double *particlePrefWalk(particle_type *p);
-void selectNextNode(particle_type *p, double *tran_vector, int num_neighbors);
+int selectNextNode(particle_type *p, double *tran_vector, int num_neighbors);
 
 //Calculates the energy level of a given node
 void calcEnergy(particle_type *p);
 
 // Calculates the new dominator (particle) of the newly occupied, by particle j, node i
-void compNodeDominator(particle_type *p);
+void compNodeDominator(particle_type *p, int num_particles);
 
 //Computes N bar ( the relative frequency of visits of particle k \
 to node i) for particle k on node i
-double compNBar(int k, int i);
+//double compNBar(int k, int i);
 
 //Computes matrixNBar containing the relative frequencies of \
 visits of particle k to node i
-void compMatrixNBar();
+void compMatrixNBar(int num_particles);
 
 //Computes the infinity norm of ( NBar(t)-NBar(t-1)) in order to \
 compare to EPSILON to approximate a fixed point
-double compFixPoint();
+double compFixPoint(int num_particles);
 
 //Initializes matrixN containing the freaquencies of visits of \
  of particle k to node i
@@ -52,6 +51,7 @@ non-negative element in the array.
 int max_array(double *arr, int arrLen);
 
 // Print the final clusters 
-void printClusters();
+void printClusters(int num_particles);
+void printConvergenceZachary();
 
 #endif  /*  _RUN_DETECTION_H_ */

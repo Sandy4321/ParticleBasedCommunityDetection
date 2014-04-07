@@ -22,10 +22,11 @@ double **matrixNBarCopy;
  **************************************
  * Drives the community detection algorithm
  */
-void runDetection()
+void runDetection(int num_iterations, int num_particles, double alpha)
 {
 
 	int i=0, j, k, out;
+	int success = 0;
 	int num_neighbors;
 	double rand_prob;
 	double fixed_pt = 0.0;
@@ -36,30 +37,30 @@ void runDetection()
     assert(graph != NULL);
     srand(time(NULL));
 
-	matrixN = create2DArray(graph->nvert, NUM_PARTICLES);
+	matrixN = create2DArray(graph->nvert, num_particles);
 	out = (matrixN == NULL);
 	CHECK(out, "Unable to allocate memroy for matrixN");
 
-	matrixNBar = create2DArray(graph->nvert, NUM_PARTICLES);
+	matrixNBar = create2DArray(graph->nvert, num_particles);
     out = (matrixNBar == NULL);
     CHECK(out, "Unable to allocate memroy for matrixNBar");
 
-	matrixNBarCopy = create2DArray(graph->nvert, NUM_PARTICLES);
+	matrixNBarCopy = create2DArray(graph->nvert, num_particles);
 	out = (matrixNBarCopy == NULL);
 	CHECK(out, "Unable to allocate memroy for matrixNBarCopy");
 	
 	//Initialize matrix N, where (i, j) = num of times particle j \
 	  visited node i
-	initMatrixN(graph->nvert, NUM_PARTICLES);
+	initMatrixN(graph->nvert, num_particles);
 	//Compute matrixNBar
-	compMatrixNBar();
+	compMatrixNBar(num_particles);
 
 	printf("\nRUNNING DETECTION ALG.....\n");
 	// Main descrete-time driving loop. 
 	// In each iteration, each particle performs a walk
     do
     {
-        for(j=0; j<NUM_PARTICLES; j++)		// for EACH PARTICLE 
+        for(j=0; j < num_particles; j++)		// for EACH PARTICLE 
         {
             if(particles[j].state == ACTIVE){ 
 				//find the num of neighbors of the node particle j \
@@ -80,13 +81,15 @@ void runDetection()
 				out = (tran_vector == NULL);
 			    CHECK(out, "Unable to allocate memroy for tran_vector");
 				for(k=0; k < num_neighbors; k++){
-					tran_vector[k] = (1-ALPHA)*rand_prob + ALPHA*pref_prob[k];
+					tran_vector[k] = (1-alpha)*rand_prob + alpha*pref_prob[k];
 				//	printf("%g | ", tran_vector[k]);
 				}
 			//	printf("\n");
 				
 				//make a final selection of the node to transition to
-				selectNextNode(&particles[j], tran_vector, num_neighbors);
+				success = 0;
+				while(!success)
+					success = selectNextNode(&particles[j], tran_vector, num_neighbors);
 
 				//update particle energy level after move
 				calcEnergy(&particles[j]);
@@ -95,10 +98,7 @@ void runDetection()
                 matrixN[particles[j].curr_node_id][particles[j].id]++;
 				
 				//calculate the new dominator of the node particle j just moved to
-				compNodeDominator(&particles[j]);
-				
-				//copy matrixNBar into matrixNBarCopy
-				memcpy(matrixNBarCopy, matrixNBar, graph->nvert* NUM_PARTICLES*sizeof(double));
+				compNodeDominator(&particles[j], num_particles);
 				
 				free(tran_vector);
 				free(pref_prob);
@@ -108,21 +108,43 @@ void runDetection()
                 particleRean(&particles[j]);
 			}
         }
-		compMatrixNBar();
-        //printf("matrixNBar\n-----------------\n");
-        //print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
+//		printf("matrixN\n-----------------\n");
+//		print2DArr(matrixN, graph->nvert, num_particles);
+//		printf("matrixNBar before update\n-----------------\n");
+//		print2DArr(matrixNBar, graph->nvert, num_particles);
+		//copy matrixNBar into matrixNBarCopy
+        memcpy(matrixNBarCopy[0], matrixNBar[0], graph->nvert* num_particles*sizeof(double));
+//		printf("matrixNBarCopy before update\n-----------------\n");
+//		print2DArr(matrixNBarCopy, graph->nvert, num_particles);
+		compMatrixNBar(num_particles);
+  //      printf("matrixNBar after update\n-----------------\n");
+  //      print2DArr(matrixNBar, graph->nvert, num_particles);
         //Compute the diff b/n NBar(t)-NBar(t-1) in order to \
         compare to EPSILON
-        //fixed_pt = compFixPoint();
-        //printf("fixed_pt = %g\n", fixed_pt);
+        fixed_pt = compFixPoint(num_particles);
+
+//        if(0 == fixed_pt)
+//        {
+//            printf("\nNbar\n");
+//            print2DArr(matrixNBar, graph->nvert, num_particles);
+//            printf("\nNbarCopy\n");
+//            print2DArr(matrixNBarCopy, graph->nvert, num_particles);
+//        }
 
         //printf("\n\n Iteration %d\n", i);
         //printParticles();
 		i++;
-    }while(i<NUM_ITERATIONS);
+    // (0.0 == fixed_pt) whenever multiple particles visit the same node. 
+    // We allow this to avoid situations in which particles are stuck on a node
+    // and also to avoid fixed_pt to be reached prematurely whenever Nbar - NbarCopy = 0
+    // due to multiple particles visiting the same node. 
+    }while((fixed_pt > EPSILON)||(0.0 == fixed_pt));
+		
+    printf("\n\n Iteration %d\n", i);
+    printf("fixed_pt = %g\n", fixed_pt);
 
-	printf("\n Final matrixN:\n-------------\n");
-	print2DArr(matrixN, graph->nvert, NUM_PARTICLES);
+//	printf("\n Final matrixN:\n-------------\n");
+//	print2DArr(matrixN, graph->nvert, num_particles);
 
 	//calcPrand();
 	free(matrixN);
@@ -219,10 +241,11 @@ double *particlePrefWalk(particle_type *p)
  * on the vector containing the transition probabilities for all neighbors of
  * the node p currently occupies.
  */
-void selectNextNode(particle_type *p, double *tran_vector, int num_neighbors)
+int selectNextNode(particle_type *p, double *tran_vector, int num_neighbors)
 {
+	int success = 0;
 	double prob = (double)rand()/(double)RAND_MAX;
-	int i;
+	int i, j, k;
     double step = 0.0;
 	adjlist_node_type *listPtr = graph->nodes[p->curr_node_id].head;
 
@@ -231,15 +254,36 @@ void selectNextNode(particle_type *p, double *tran_vector, int num_neighbors)
     {
 		step = step + tran_vector[i];
 //		printf("neighbor %d-> step = %g\n", i, step);
-        if(step >= prob)
-		{
-		    p->prev_node_id = p->curr_node_id;
-		    p->curr_node_id = listPtr->id;
-            break;
+        if((step >= prob))
+		{	
+
+			if((p->prev_node_id == listPtr->id)&&(num_neighbors > 1))
+			{
+				break;
+			}
+            
+			else{
+
+                /*
+                // Issue if particle is occupying the only available neighbor. 
+                for(j=0; j< p->id; j++)
+                {
+                    if(particles[j].curr_node_id == listPtr->id)
+                    {
+                        return 0; 
+                    }
+
+                }
+                */
+				p->prev_node_id = p->curr_node_id;
+				p->curr_node_id = listPtr->id;
+				success = 1;
+				break;
+			}
         }
 		listPtr = listPtr->next;
     }
-
+	return success;
 }
 
 /*
@@ -300,14 +344,14 @@ void calcEnergy(particle_type *p)
  **************************************
  * Calculates the new dominator (particle) of the newly occupied, by particle j, node i
 */
-void compNodeDominator(particle_type *p)
+void compNodeDominator(particle_type *p, int num_particles)
 {
 	// Recalculate the new dominator for that node
     int i;
 	int max_visits = 1;
     int temp;
     int new_dominator = graph->nodes[p->curr_node_id].idx_node.dominator;;
-    for(i=0; i<NUM_PARTICLES; i++)
+    for(i=0; i<num_particles; i++)
     {
         temp = 0;
         temp = matrixN[p->curr_node_id][i];
@@ -326,13 +370,13 @@ void compNodeDominator(particle_type *p)
  * Computes N bar ( the relative frequency of visits of particle k
  * to node i) for particle k on node i
  */
-double compNBar(int k, int i)
+double compNBar(int k, int i, int num_particles)
 {
 	int j;
 	int total_visits = 0;
 	//adjlist_node_type *listPtr = graph->nodes[i].head;
 	
-	for(j=0; j<NUM_PARTICLES; j++){
+	for(j=0; j<num_particles; j++){
 		//k-inclusive
 		total_visits = total_visits + matrixN[i][j];
 	}
@@ -344,17 +388,18 @@ double compNBar(int k, int i)
  *Computes matrixNBar containing the relative frequencies of \
  *visits of particle k to node i
  */
-void compMatrixNBar()
+void compMatrixNBar(int num_particles)
 {
 	int i,j;
-	int total_visits = 0;
+	int total_visits;
 
 	for(i=0; i < graph->nvert; i++){
-		for(j=0; j<NUM_PARTICLES; j++){
+		total_visits = 0;
+		for(j=0; j<num_particles; j++){
 		    //k-inclusive
 			total_visits = total_visits + matrixN[i][j];
 	    }
-		for(j=0; j<NUM_PARTICLES; j++){
+		for(j=0; j<num_particles; j++){
 	        //k-inclusive
 			matrixNBar[i][j] = (double)(matrixN[i][j]/total_visits);
 	    }
@@ -367,14 +412,14 @@ void compMatrixNBar()
  *Computes the infinity norm of ( NBar(t)-NBar(t-1)) in order to \
  *compare to EPSILON to approximate a fixed point
  */
-double compFixPoint()
+double compFixPoint(int  num_particles)
 {
 	int i,j, out;
 	double max_diff = 0.0;
 	double *diff_vect = NULL;
 	double **diff_mat = NULL;
 
-	diff_mat = create2DArray(graph->nvert, NUM_PARTICLES);
+	diff_mat = create2DArray(graph->nvert, num_particles);
     out = (diff_mat == NULL);
     CHECK(out, "Unable to allocate memroy for diff_mat");
 	
@@ -386,20 +431,22 @@ double compFixPoint()
 
 	//Compute the diff b/n matrixNBar(aka NBar(t)) and matrixNBarCopy (aka NBar(t-1)) 
 	for(i=0; i < graph->nvert; i++)
-		for(j=0; j < NUM_PARTICLES; j++)
+		for(j=0; j < num_particles; j++){
 			diff_mat[i][j] = matrixNBar[i][j] - matrixNBarCopy[i][j];
+	//		printf("%g - %g = %g\n",  matrixNBar[i][j], matrixNBarCopy[i][j], diff_mat[i][j]);
+	}
 //	printf("matrixNBarCopy\n");
-//	print2DArr(matrixNBarCopy, graph->nvert, NUM_PARTICLES);
-//	printf("matrixNBar\n");
-//	print2DArr(matrixNBar, graph->nvert, NUM_PARTICLES);
-	//print2DArr(diff_mat, graph->nvert, NUM_PARTICLES);
+//	print2DArr(matrixNBarCopy, graph->nvert, num_particles);
+//	printf("diff_mat\n");
+//	print2DArr(matrixNBar, graph->nvert, num_particles);
+//	print2DArr(diff_mat, graph->nvert, num_particles);
 	//Sum up the entries in each raw of the diff matrix
     for(i=0; i < graph->nvert; i++)
-        for(j=0; j < NUM_PARTICLES; j++)
-            diff_vect[i] = diff_vect[i] + diff_mat[i][j];
+        for(j=0; j < num_particles; j++)
+            diff_vect[i] = diff_vect[i] + ABS(diff_mat[i][j]);
 
 	//find the max value in diff_vect
-//	max_diff = diff_vect[max_array(diff_vect, graph->nvert)]; 	
+	max_diff = diff_vect[max_array(diff_vect, graph->nvert)]; 	
 
 	free(diff_vect);
 	free(diff_mat);
@@ -497,13 +544,14 @@ int max_array(double *arr, int arrLen)
  ***************************************
  * Print each cluster. We have as many clusters as we have particles in this algorithm
  */
-void printClusters()
+void printClusters(int num_particles)
 {
 
     int i, j; 
 	
 	printf("\n");
-    for(i=0; i< NUM_PARTICLES; i++)
+    for(i=0; i< num_particles; i++)
+   //int i;
     {
         printf("Cluster %d: ", i); 
         for(j=0; j< graph->nvert; j++)
@@ -514,6 +562,107 @@ void printClusters()
         printf("\n"); 
     }
 
+	printf("\n");
+    for(i=0; i< num_particles; i++)
+   //int i;
+    {
+        printf("Cluster %d: ", i); 
+        for(j=0; j< graph->nvert; j++)
+        {
+                if(graph->nodes[j].idx_node.dominator == i)
+                    printf("%s, ", graph->nodes[j].idx_node.label); 
+        }
+        printf("\n"); 
+    }
+
 
 }
+/*
+ * Print convergence of each cluster.
+ * NOTE: This is hardcoded to the Zachary graph.
+ * It's nasty but great for debugging.
+ */
+void printConvergenceZachary()
+{
 
+    int i, j;
+    int num_correct = 0;
+    double ratio = 0;
+
+    if(graph->nodes[0].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[1].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[2].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[3].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[4].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[5].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[6].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[7].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[8].idx_node.dominator == 1)
+        num_correct++;
+	if(graph->nodes[9].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[10].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[11].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[12].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[13].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[14].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[15].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[16].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[17].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[18].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[19].idx_node.dominator == 0)
+        num_correct++;
+    if(graph->nodes[20].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[21].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[22].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[23].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[24].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[25].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[26].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[27].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[28].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[29].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[30].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[31].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[32].idx_node.dominator == 1)
+        num_correct++;
+    if(graph->nodes[33].idx_node.dominator == 1)
+        num_correct++;
+
+    if(num_correct < 16)
+        num_correct = 34 - num_correct;
+
+    ratio = ((double)num_correct)/34.0;
+    printf("convergence ratio: %lf %d\n", ratio, num_correct);
+
+}
+                                            

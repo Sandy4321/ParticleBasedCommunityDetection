@@ -7,11 +7,11 @@
 #ifndef PARTICLE_H_
 #define PARTICLE_H_
 
-#define NUM_PARTICLES 2
+//#define NUM_PARTICLES 2
 #define OMEGA_MAX 1
 #define OMEGA_MIN 0
 #define DELTA 0.1
-#define ALPHA 0.4
+//#define ALPHA 0.4
 //pertaining to particle state \
 counterintuitive values but match the paper \
 and necessary so for the transition matrix
@@ -34,9 +34,12 @@ typedef struct particle
 particle_type *particles;
 
 // Allocate memory for particles
-void initParticles();
+void initParticles(int num_particles);
 
 // Disperse the particles at random on the graph.
-void initPlaceParticles(); 
+void initPlaceParticles(int num_particles); 
+
+// Print out the particle profiles
+void printParticles(int num_particles);
 
 #endif
