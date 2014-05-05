@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <assert.h>
 #include "graph.h"
 #include "main_driver.h"
 
@@ -22,11 +22,9 @@
 int readGraph(char *filename)
 {
 	int i,j,c;
-	int vertex, neighbor, num_nodes;
-	double weight, rel_weight, total_weight;
-	char buffer[10];
-	char *end;
-	FILE *fin;
+	int vertex=0, neighbor=0, num_nodes=0;
+	char buffer[10] = "";
+	FILE *fin = NULL;
 
 	//open data file for reading
 	fin = fopen(filename, "r");
@@ -46,7 +44,7 @@ int readGraph(char *filename)
 		}
 	}
 	//convert the number of nodes string to int
-	num_nodes = strtod(buffer, &end);
+	num_nodes = atoi(buffer);
 	printf("num_nodes = %d\n", num_nodes);
 	createGraph(num_nodes);
 
@@ -55,9 +53,11 @@ int readGraph(char *filename)
 			break;
 		printf("%d %d\n", vertex, neighbor);
 		addEdge(vertex-1, neighbor-1);
+	//	printGraph();
 	}
 	
-	//printGraph(graph);			
+	//printGraph(graph);
+	fclose(fin);			
 }	
 
 /*
@@ -65,9 +65,9 @@ int readGraph(char *filename)
  */
 int readLabels(char *filename)
 {
-	int i;
-	char buffer[24];
-	FILE *fin;
+	int i,j,k=0;
+	char buffer[24]="";
+	FILE *fin = NULL;
 
 	//open data file for reading
 	fin = fopen(filename, "r");
@@ -77,11 +77,15 @@ int readLabels(char *filename)
     	}
 
     i = 0; 
-	while (!feof(fin)) {
-		fscanf(fin, "%s", buffer);
-        strcpy(graph->nodes[i].idx_node.label, buffer);
-        i++; 
-		printf("%s\n", buffer);
+	while (EOF != fscanf(fin, "%s", buffer)) {
+//		k = fscanf(fin, "%s", buffer);
+//		j = (k == EOF);
+//	    CHECK(j, "Problem with fscanf.");
+		assert(i<graph->nvert);
+        graph->nodes[i].label = atoi(buffer); 
+		printf("%d\n", graph->nodes[i].label);
+		
+		i++;
 	}
 
 	fclose(fin);
@@ -89,19 +93,19 @@ int readLabels(char *filename)
 }	
 
 /* 
- *Creates an edge list node
+ *Creates an edge list neighbor node 
  */
-adjlist_node_type* createNode(int v)
+neighbor_type* createNode(int v)
 {
-	int i;
+	int i=0;
 	
-    adjlist_node_type* newNode = (adjlist_node_type*)malloc(sizeof(adjlist_node_type));
+    neighbor_type* newNode = (neighbor_type*)malloc(sizeof(neighbor_type));
 	//Check if memeory allocation was successful
     i = (newNode == NULL);
 	CHECK(i, "Unable to allocate memory for new node");
  
     newNode->id = v;
-    newNode->weight = 1;
+  //  newNode->weight = 1;
     newNode->next = NULL;
  
     return newNode;
@@ -121,15 +125,16 @@ int createGraph(int n)
     graph->nvert = n;
  
     // Create an array of adjacency lists
-    graph->nodes = (adjlist_type*)malloc(n * sizeof(adjlist_type));
+    graph->nodes = (adjlist_node_type*)malloc(n * sizeof(adjlist_node_type));
     j = ((graph->nodes) == NULL);
 	CHECK(j, "Unable to allocate memory for adjacency list array");
  
 	//Init each nodes list (array)
     for(i = 0; i < n; i++)
     {
-	  	graph->nodes[i].idx_node.id = i;
-	  	graph->nodes[i].idx_node.dominator = -1;
+	  	graph->nodes[i].id = i;
+	  	graph->nodes[i].label = 0;
+		graph->nodes[i].dominator = -1;
         graph->nodes[i].head = NULL;
         graph->nodes[i].num_neighbors = 0;
     }
@@ -151,21 +156,24 @@ void destroyGraph()
             //Free up the nodes
             for (i = 0; i < graph->nvert; i++)
             {
-                adjlist_node_type* listPtr = graph->nodes[i].head;
+                neighbor_type* listPtr = graph->nodes[i].head;
                 while (listPtr)
                 {
-                    adjlist_node_type* tmp = listPtr;
+                    neighbor_type* tmp = listPtr;
                     listPtr = listPtr->next;
                     free(tmp);
                 }
+				free(listPtr);
             }
             //Free the adjacency list array
             free(graph->nodes);
         }
+		
         //Free graph
         free(graph);
     }
 }
+
  
 /* 
  *Inserts an edge in the graph
@@ -174,7 +182,7 @@ void destroyGraph()
 void addEdge(int src, int dest)
 {
     // Add an edge from src to dst in the adjacency list
-    adjlist_node_type* newNode = createNode(dest);
+    neighbor_type* newNode = createNode(dest);
     newNode->next = graph->nodes[src].head;
     graph->nodes[src].head = newNode;
     graph->nodes[src].num_neighbors++;
@@ -184,6 +192,8 @@ void addEdge(int src, int dest)
     newNode->next = graph->nodes[dest].head;
     graph->nodes[dest].head = newNode;
     graph->nodes[dest].num_neighbors++; 
+
+	//free(newNode);
 }
 
 /*
@@ -193,13 +203,14 @@ void addEdge(int src, int dest)
 int isNeighbor(int i, int j)
 {
 	int k;
-	adjlist_node_type *listPtr = graph->nodes[i].head;
+	neighbor_type *listPtr = graph->nodes[i].head;
 
 	for(k=0; k< graph->nodes[i].num_neighbors; k++){
-		if(listPtr->id == graph->nodes[i].idx_node.id)
+		if(listPtr->id == graph->nodes[i].id)
 			return 1;
 		listPtr = listPtr->next;
 	}
+	//free(listPtr);
 	return 0;
 }
 
@@ -210,20 +221,27 @@ int isNeighbor(int i, int j)
  */
 void printGraph()
 {
-    int i;
+    int i, j=0;
+	neighbor_type* listPtr = NULL;
 	
 	printf("\nGraph's Adjacency List:\n");
 	printf("-----------------------\n");
     for (i = 0; i < graph->nvert; i++)
     {
-        adjlist_node_type* listPtr = graph->nodes[i].head;
-        printf("%d: ", graph->nodes[i].idx_node.id);
+        listPtr = graph->nodes[i].head;
+		j = (listPtr == NULL);
+	    CHECK(j, "listPtr is NULL!");     
+
+		printf("%d: ", graph->nodes[i].id);
         while (listPtr)
         {
             printf("->%d", listPtr->id);
             listPtr = listPtr->next;
         }
-        printf("\tdominator: %d \n", graph->nodes[i].idx_node.dominator);
-    }
-}
+        printf("\tdominator: %d \t %d\n", graph->nodes[i].dominator,  graph->nodes[i].label);
+		
+	//	free(listPtr);
+		listPtr = NULL;
+	}
 
+}

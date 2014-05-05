@@ -29,12 +29,15 @@ typedef struct particle
     int state;
     int curr_node_id;
     int prev_node_id;
+	double prev_count;
 } particle_type;
 
 particle_type *particles;
 
 // Allocate memory for particles
 void initParticles(int num_particles);
+
+void initUpdateParticles(int num_particles); 
 
 // Disperse the particles at random on the graph.
 void initPlaceParticles(int num_particles); 

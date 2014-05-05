@@ -26,6 +26,7 @@ void initParticles(num_particles)
         particles[i].state = ACTIVE;			// active == 1, otherwise exhausted
         particles[i].curr_node_id = 0; 
         particles[i].prev_node_id = 0; 
+        particles[i].prev_count = 0.0;
         
     }
 
@@ -38,21 +39,29 @@ void initParticles(num_particles)
 void initPlaceParticles(num_particles)
 {
     /*particles[0].curr_node_id = 5; 
-    graph->nodes[5].idx_node.dominator = 0; 
+    graph->nodes[5].dominator = 0; 
 	particles[1].curr_node_id = 25;
-	graph->nodes[25].idx_node.dominator = 1;
+	graph->nodes[25].dominator = 1;
 	*/
 
 	int i, j;
 	srand((unsigned)time(NULL));
+//	srand(0);
     for(i=0; i<num_particles; i++)
     {
 		j = (rand() % (graph->nvert-1) + 0); 
         particles[i].curr_node_id = j;
-        graph->nodes[j].idx_node.dominator = i;
+        graph->nodes[j].dominator = particles[i].id;
     }
 
 }
+void initUpdateParticles(int num_particles)
+{
+    int i;
+    for(i=0; i<num_particles; i++)
+        particles[i].prev_count = getNBar(particles[i].curr_node_id,i);
+}
+
 
 /*
  **********************************
@@ -69,6 +78,7 @@ void printParticles(num_particles)
         printf("\n\t state: %d" , particles[i].state); 
         printf("\n\t curr_node_id: %d" , particles[i].curr_node_id); 
         printf("\n\t prev_node_id: %d" , particles[i].prev_node_id); 
+        printf("\n\t prev_count: %g" , particles[i].prev_count);
     }       
     printf("\n");
 

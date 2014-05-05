@@ -7,37 +7,60 @@
 #ifndef GRAPH_H_
 #define GRAPH_H_
 
+
+ // edgelist struct
+typedef struct neighbor
+{
+    int id;                 // node id of the neighbor
+  //  double weight;         // weight of edge b/n node & neighbor
+    struct neighbor *next;  //pointer to another neighbor
+} neighbor_type;
+
 // edgelist node struct
 typedef struct adjlist_node
 {
     int id;
-    double weight;
-    double rel_weight;
-
     int dominator;     // which particle dominates this node
-    char label[24]; 
-
-    struct adjlist_node *next;
+    int num_neighbors;
+	int label;
+    neighbor_type *head;
 } adjlist_node_type;
 
- // edgelist struct
-typedef struct adjlist
+// describes a stripped particle profile \
+   used in matrix N
+typedef struct mini_particle
 {
-    int num_neighbors;
-    adjlist_node_type idx_node;                 //the actual vertex
-    adjlist_node_type *head;                    //pointer to the beginning of \
-                                                  the neighbor list of the vertex
-} adjlist_type;
+    int id;
+	int nvisits;
+    struct mini_particle *next;
+} mini_particle_type;
+
+// stripped down version of the node \
+   profile to be used in the matrix N \
+   array of lists
+typedef struct mini_node
+{
+	int id;
+	mini_particle_type *head; 
+} mini_node_type;
 
 // graph struct
 typedef struct graph
 {
     int nvert;      // |V|
     int nedges;          // |E|
-    adjlist_type *nodes;
+    adjlist_node_type *nodes;
 } graph_type;
 
-graph_type *graph; 
+graph_type *graph;
+
+// matrix N struct
+typedef struct matrixN
+{
+	mini_node_type *nodes;
+} matrixN_type;
+
+matrixN_type *matrixN;
 
 //Reads data from input file and builds a graph based on it
 int readGraph(char *filename);
